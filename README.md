@@ -156,8 +156,66 @@ En cuanto a la dificultad de depuración, la versión flex fue más fácil de es
 
 En conclusión, flex gana en velocidad de desarrollo y legibilidad cuando los patrones son complejos, mientras que C puro gana en rendimiento crudo cuando el patrón es simple y se necesita procesar archivos grandes rápidamente.
 
-### Capturas de las pruebas
-
-<!-- Insertar aquí las capturas correspondientes al Ejercicio 6 -->
-
-![Prueba Ejercicio 6](imagenes/ejercicio6.png)
+### Evidencia de ejecución
+ 
+Compilación de ambas versiones:
+ 
+```
+$ flex fb1-1.l
+$ cc -o wc_flex lex.yy.c -lfl
+ 
+$ cc -O2 -o wc_c wc_c.c
+```
+ 
+Prueba de equivalencia con un archivo de texto pequeño:
+ 
+```
+$ echo "Hola mundo, esto es una prueba.
+Segunda linea con mas palabras 123 y simbolos!!" > prueba_chica.txt
+ 
+--- flex ---
+$ ./wc_flex < prueba_chica.txt
+       2      13      80
+ 
+--- C puro ---
+$ ./wc_c < prueba_chica.txt
+       2      13      80
+```
+ 
+Ambas versiones dieron el mismo resultado: 2 líneas, 13 palabras, 80 caracteres.
+ 
+Archivo grande generado para la prueba de rendimiento (100 MB, aproximadamente 2 millones de líneas y 16 millones de palabras):
+ 
+```
+$ ls -lh archivo_grande.txt
+-rw-r--r-- 1 root root 100M archivo_grande.txt
+ 
+$ wc archivo_grande.txt
+  1999999  15994556 104758553 archivo_grande.txt
+```
+ 
+Verificación de que ambas versiones dan el mismo resultado en el archivo grande:
+ 
+```
+$ ./wc_flex < archivo_grande.txt
+ 1999999 15994556 104758553
+ 
+$ ./wc_c < archivo_grande.txt
+ 1999999 15994556 104758553
+```
+ 
+Tiempos de ejecución, tres corridas por cada versión:
+ 
+```
+=== Tiempo version FLEX ===
+corrida 1: 1.724175049 s
+corrida 2: 1.749044464 s
+corrida 3: 1.729085080 s
+ 
+=== Tiempo version C PURO ===
+corrida 1: 0.811875433 s
+corrida 2: 0.813062914 s
+corrida 3: 0.816572690 s
+```
+ 
+Promedios: flex 1.734 s, C puro 0.814 s, lo que da un factor de mejora de aproximadamente 2.13 veces más rápido en la versión de C puro.
