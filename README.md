@@ -1,4 +1,4 @@
-# Ejercicios 1, 2, 5 y 6 — Flex & Bison, Capítulo 1
+# Ejercicios 1, 2, 3, 4, 5 y 6 — Flex & Bison, Capítulo 1
 
 ## Ejercicio 1
 
@@ -117,7 +117,310 @@ Esto demuestra que la calculadora acepta números en ambas representaciones y mu
 
 
 ---
+## Ejercicio 3 — Operador OR en la calculadora
 
+### Objetivo
+
+Modificar la calculadora del Ejemplo 1-5 para agregar el operador OR a nivel de bits utilizando el símbolo `|`, que originalmente era utilizado como operador unario de valor absoluto.
+
+### Modificación realizada
+
+Se agregó la siguiente regla a la gramática de la calculadora:
+
+```c
+| exp ABS factor { $$ = $1 | $3; }
+```
+
+El scanner continúa reconociendo el símbolo `|` mediante:
+
+```c
+"|" { return ABS; }
+```
+
+Por lo tanto, el mismo token `ABS` puede utilizarse por el parser en dos contextos diferentes:
+
+- `ABS term` para calcular el valor absoluto.
+- `exp ABS factor` para realizar la operación OR bit a bit.
+
+### Prueba 1 — Valor absoluto
+
+Se ejecutó la calculadora mediante:
+
+```bash
+./calculadora.exe
+```
+
+y se ingresó:
+
+```text
+|5
+```
+
+El resultado obtenido fue:
+
+```text
+= 5
+```
+
+Esta prueba permite comprobar que el operador `|` continúa funcionando como operador unario de valor absoluto.
+
+**Captura:**
+
+<img width="1545" height="174" alt="image" src="https://github.com/user-attachments/assets/029e06cc-63d8-4f06-ada4-c13f14dec012" />
+
+
+### Prueba 2 — Operador OR
+
+Se ingresó:
+
+```text
+5 | 3
+```
+
+El resultado obtenido fue:
+
+```text
+= 7
+```
+
+La operación corresponde al OR bit a bit:
+
+```text
+  0101
+| 0011
+------
+  0111
+```
+
+Por lo tanto, el resultado decimal es `7`.
+
+**Captura:**
+
+<img width="1531" height="202" alt="image" src="https://github.com/user-attachments/assets/b7a717f9-b635-44e9-98a0-77e85e3bd4c6" />
+
+
+### Prueba 3 — Combinación de operadores
+
+Se realizó una prueba combinando el operador OR con la suma:
+
+```text
+|5 | 3 
+```
+
+**Resultado obtenido:**
+
+7
+
+**Captura:**
+
+<img width="1521" height="163" alt="image" src="https://github.com/user-attachments/assets/d997abc1-a2cf-4979-ac2c-6b722e1fc770" />
+
+
+### Análisis del comportamiento
+
+El símbolo `|` puede utilizarse tanto como operador unario de valor absoluto como operador binario OR.
+
+El scanner no necesita distinguir entre ambos casos, ya que en ambos devuelve el token `ABS`. Es el parser, mediante las reglas de la gramática, el encargado de determinar cómo se utiliza el token dependiendo del contexto.
+
+La utilización del mismo token para ambos usos permite que el parser interprete `|` como valor absoluto cuando aparece delante de un término y como OR cuando aparece entre dos expresiones.
+
+---
+
+## Ejercicio 4 — Comparación del scanner manual y Flex
+
+### Objetivo
+
+Comparar el scanner escrito manualmente del Ejemplo 1-4 con la versión del scanner implementada mediante Flex.
+
+Se utilizaron diferentes entradas para comprobar qué tokens reconoce cada implementación y determinar si ambos scanners reconocen exactamente los mismos tokens.
+
+Para la comparación se utilizaron los siguientes tokens:
+
+| Símbolo / entrada | Token | Valor |
+|---|---|---:|
+| `+` | ADD | 259 |
+| `-` | SUB | 260 |
+| `*` | MUL | 261 |
+| `/` | DIV | 262 |
+| `\|` | ABS | 263 |
+| `(` | OP | 265 |
+| `)` | CP | 266 |
+| números | NUMBER | 258 |
+| salto de línea | EOL | 264 |
+
+### Prueba 1 — Números
+
+Se utilizó la entrada:
+
+```text
+123
+```
+
+El scanner manual reconoció el número como `NUMBER` y el salto de línea como `EOL`.
+
+Resultado observado:
+
+```text
+258 = 123
+264
+```
+
+**Captura del scanner manual:**
+
+<img width="1505" height="204" alt="image" src="https://github.com/user-attachments/assets/199adf7f-e38f-408d-bed1-f9cfdf6503b1" />
+
+La versión Flex utiliza las mismas reglas principales para reconocer números:
+
+```text
+[0-9]+
+```
+
+por lo que la entrada corresponde igualmente al token `NUMBER`.
+
+### Prueba 2 — Operadores
+
+Se utilizó la entrada:
+
+```text
++ - * / |
+```
+
+El scanner manual reconoció los operadores de la siguiente manera:
+
+```text
++  → ADD
+-  → SUB
+*  → MUL
+/  → DIV
+|  → ABS
+```
+
+**Captura del scanner manual:**
+
+<img width="1558" height="385" alt="image" src="https://github.com/user-attachments/assets/8f79e9ea-1b14-47b7-af98-e4913e2de186" />
+
+La versión Flex utiliza reglas equivalentes para estos operadores, por lo que ambos scanners reconocen estos símbolos como los mismos tokens.
+
+### Prueba 3 — Paréntesis
+
+Se utilizó la entrada:
+
+```text
+( )
+```
+
+El scanner manual contiene las reglas:
+
+```c
+case '(': return OP;
+case ')': return CP;
+```
+
+por lo que reconoce `(` como `OP` y `)` como `CP`.
+
+**Captura del scanner manual:**
+
+<img width="1582" height="251" alt="image" src="https://github.com/user-attachments/assets/53b6f43a-dc5a-4812-9ae1-d8acb8d1d947" />
+
+La versión Flex también fue preparada para reconocer estos símbolos mediante reglas equivalentes.
+
+### Prueba 4 — Comentarios
+
+Se utilizó la entrada:
+
+```text
+5 // comentario
+```
+
+Esta prueba permite observar una diferencia importante entre ambas implementaciones.
+
+El scanner manual contiene código específico para reconocer `//` como comentario:
+
+```c
+if(c == '/') {
+    /* it's a comment */
+    while((c = getc(yyin)) != '\n')
+        if(c == EOF) return 0;
+}
+```
+
+Por esta razón, cuando encuentra `//`, el scanner manual descarta el contenido del comentario hasta llegar al final de la línea.
+
+**Captura del scanner manual:**
+
+<img width="1539" height="178" alt="image" src="https://github.com/user-attachments/assets/841efc01-af9b-4fb1-9d40-d93853c5d739" />
+
+En cambio, el scanner Flex utilizado para esta comparación solamente contiene una regla para `/`:
+
+```c
+"/" { return DIV; }
+```
+
+y no contiene una regla específica para `//`.
+
+Por lo tanto, el tratamiento de esta entrada no es idéntico entre las dos implementaciones.
+
+### Prueba 5 — Carácter desconocido
+
+Se utilizó la entrada:
+
+```text
+5 @ 3
+```
+
+El carácter `@` no corresponde a ninguno de los tokens definidos para la calculadora.
+
+El scanner manual utiliza una regla `default` para informar la presencia de caracteres desconocidos.
+
+**Captura del scanner manual:**
+
+<img width="1541" height="280" alt="image" src="https://github.com/user-attachments/assets/5e1bcc9f-c29b-4d07-95a0-2bd5e0accedc" />
+
+La versión Flex también posee una regla general para caracteres que no coinciden con los patrones definidos, por lo que puede informar este tipo de entrada como un carácter desconocido.
+
+### Análisis del comportamiento
+
+A partir de las pruebas realizadas y de la comparación de las reglas de ambos scanners, se observa que las dos implementaciones reconocen de manera equivalente los principales tokens de la calculadora, incluyendo números, operadores y saltos de línea.
+
+Sin embargo, **no reconocen exactamente las mismas entradas en todos los casos**.
+
+La diferencia principal encontrada corresponde al tratamiento de los comentarios `//`.
+
+El scanner manual contiene una lógica específica para detectar `//` y tratarlo como comentario, mientras que el scanner Flex utilizado en esta comparación reconoce `/` como el operador `DIV` y no posee una regla específica para `//`.
+
+Por lo tanto, la respuesta a la pregunta del ejercicio es:
+
+> **No. El scanner manual y el scanner de Flex no reconocen exactamente los mismos tokens para todas las entradas posibles.**
+
+Ambos reconocen los tokens principales de la calculadora de manera equivalente, pero existen diferencias en el comportamiento frente a determinadas entradas.
+
+### Conclusión
+
+El ejercicio permitió comparar dos formas diferentes de construir un scanner.
+
+El scanner manual realiza el análisis carácter por carácter mediante código C, utilizando estructuras como `switch`, `getc()` y `ungetc()`.
+
+Por otro lado, Flex permite definir los patrones de reconocimiento mediante expresiones regulares y asociar acciones a cada patrón.
+
+La comparación demuestra que Flex facilita la implementación de un scanner, pero que las reglas especificadas determinan exactamente qué entradas reconoce. Por esta razón, dos scanners que tienen como objetivo reconocer el mismo lenguaje pueden presentar comportamientos diferentes si sus reglas no son completamente equivalentes.
+
+## Evidencias
+
+### Ejercicio 3
+
+- Prueba de valor absoluto: `|5`
+- Prueba de OR: `5 | 3`
+- Prueba combinada: `|5 | 3 `
+
+### Ejercicio 4
+
+- Prueba de números: `123`
+- Prueba de operadores: `+ - * / |`
+- Prueba de paréntesis: `( )`
+- Prueba de comentarios: `5 // comentario`
+- Prueba de carácter desconocido: `5 @ 3`
+
+Las capturas correspondientes se encuentran en las rutas indicadas anteriormente.
 ## Ejercicio 5
 
 ¿Para qué lenguajes flex NO sería una buena herramienta?
